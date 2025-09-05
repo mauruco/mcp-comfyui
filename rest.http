@@ -1,0 +1,53 @@
+### INITIALIZE START
+POST http://localhost:8190/mcp
+Content-Type: application/json
+
+{
+    "id": null,
+    "method": "notifications/initialized"
+}
+
+### INITIALIZE
+POST http://localhost:8190/mcp
+Content-Type: application/json
+
+{
+    "id": 1,
+    "method": "initialize"
+}
+
+### TOOLS LIST
+POST http://localhost:8190/mcp
+Content-Type: application/json
+
+{
+    "id": 1,
+    "method": "tools/list"
+}
+#################################################
+### INITIALIZE START
+POST http://localhost:8189/mcp
+Content-Type: application/json
+
+{
+    "id": null,
+    "method": "notifications/initialized"
+}
+
+### INITIALIZE
+POST http://localhost:8189/mcp
+Content-Type: application/json
+
+{
+    "id": 1,
+    "method": "initialize"
+}
+
+### TOOLS LIST
+POST http://localhost:8189/mcp
+Content-Type: application/json
+
+{
+    "id": 1,
+    "method": "tools/list"
+}

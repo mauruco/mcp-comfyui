@@ -113,7 +113,7 @@ class MCPComfyUIServer {
       }
     });
   }
-
+  
   processRequest(request, res) {
     if (request.id === undefined || request.id === null) {
       if (request.method === 'notifications/initialized') {
