@@ -1,17 +1,20 @@
 {
   "name": "mcp-comfyui",
+  "author": "mauruco@gmail.com",
   "version": "1.0.0",
   "description": "MCP HTTP Server for ComfyUI integration",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "start:debug": "MCP_DEBUG=true node index.js",
-    "dev": "nodemon index.js",
-    "dev:debug": "MCP_DEBUG=true node index.js",
+    "start:rest": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> node src/rest.js",
+    "start:std": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> node src/std.js",
+    "start:rest:debug": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> MCP_DEBUG=true node src/rest.js",
+    "start:std:debug": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> MCP_DEBUG=true node src/std.js",
+    "dev:rest": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> MCP_DEBUG=true nodemon src/rest.js",
+    "dev:std": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> MCP_DEBUG=true nodemon src/std.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "echo \"Linting not configured yet\"",
-    "type-check": "node -c src/server/index.js && node -c src/models/flux-krea-t2i.js && node -c src/config/index.js"
+    "type-check": "node -c src/rest.js && node -c src/std.js && node -c src/models.js"
   },
   "keywords": [
     "mcp",
@@ -20,23 +23,12 @@
     "image-generation",
     "server"
   ],
-  "author": "",
   "license": "Apache-2.0",
-  "dependencies": {
-    "axios": "^1.11.0"
-  },
-  "bin": {
-    "mcp-comfyui": "./index.js"
-  },
-  "usage": {
-    "start": "npm start",
-    "custom-port": "node index.js --port 3000",
-    "env-var": "MCP_SERVER_PORT=3000 npm start"
-  },
   "engines": {
     "node": ">=20.11.0"
   },
   "devDependencies": {
+    "eslint": "^9.35.0",
     "nodemon": "^3.1.10"
   }
 }
