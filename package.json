@@ -1,0 +1,34 @@
+{
+  "name": "mcp-comfyui",
+  "author": "mauruco@gmail.com",
+  "version": "1.0.0",
+  "description": "MCP HTTP Server for ComfyUI integration",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start:rest": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> node src/rest.js",
+    "start:std": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> node src/std.js",
+    "start:rest:debug": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> MCP_DEBUG=true node src/rest.js",
+    "start:std:debug": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> MCP_DEBUG=true node src/std.js",
+    "dev:rest": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> MCP_DEBUG=true nodemon src/rest.js",
+    "dev:std": "COMFYUI_OUTPUT_PATH=<ComfyUIOutputFolder> MCP_DEBUG=true nodemon src/std.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "echo \"Linting not configured yet\"",
+    "type-check": "node -c src/rest.js && node -c src/std.js && node -c src/models.js"
+  },
+  "keywords": [
+    "mcp",
+    "comfyui",
+    "ai",
+    "image-generation",
+    "server"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.35.0",
+    "nodemon": "^3.1.10"
+  }
+}

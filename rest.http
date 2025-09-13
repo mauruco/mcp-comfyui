@@ -1,0 +1,59 @@
+### INITIALIZE
+POST http://localhost:8190/mcp
+Content-Type: application/json
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize"
+}
+
+### INITIALIZE NOTIFICATIONS
+POST http://localhost:8190/mcp
+Content-Type: application/json
+
+{
+    "jsonrpc": "2.0",
+    "id": null,
+    "method": "notifications/initialized"
+}
+
+### TOOLS LIST
+POST http://localhost:8190/mcp
+Content-Type: application/json
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/list"
+}
+
+### TOOLS CALL
+POST http://localhost:8190/mcp
+Content-Type: application/json
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+        "arguments": {
+            "file_name": "teste-image.png",
+            "model": "flux-krea-t2i",
+            "prompt": "a lovely place",
+            "output_path": "/home/mauruco/Downloads/_comfyui/output/",
+            "width": 544,
+            "height": 544,
+            "sed": 1313
+        }
+    }
+}
+
+### COMFYUI POST
+POST http://127.0.0.1:8188/prompt
+Content-Type: application/json
+
+{"prompt":{"54":{"inputs":{"vae_name":"flux/ae.safetensors"},"class_type":"VAELoader","_meta":{"title":"LoadVAE"}},"55":{"inputs":{"width":544,"height":960,"batch_size":1},"class_type":"EmptySD3LatentImage","_meta":{"title":"EmptySD3LatentImage"}},"56":{"inputs":{"unet_name":"flux/flux1-krea-dev_fp8_scaled.safetensors","weight_dtype":"default"},"class_type":"UNETLoader","_meta":{"title":"LoadDiffusionModel"}},"57":{"inputs":{"clip_name1":"clip_l.safetensors","clip_name2":"t5xxl_fp8_e4m3fn.safetensors","type":"flux","device":"default"},"class_type":"DualCLIPLoader","_meta":{"title":"DualCLIPLoader"}},"59":{"inputs":{"guidance":3.5,"conditioning":["60",0]},"class_type":"FluxGuidance","_meta":{"title":"FluxGuidance"}},"60":{"inputs":{"text":"alovelyplace","clip":["57",0]},"class_type":"CLIPTextEncode","_meta":{"title":"CLIPTextEncode(Prompt)"}},"61":{"inputs":{"conditioning":["60",0]},"class_type":"ConditioningZeroOut","_meta":{"title":"NegativePromp(Empty)-ConditioningZeroOut"}},"62":{"inputs":{"filename_prefix":"api","images":["63",0]},"class_type":"SaveImage","_meta":{"title":"SaveImage"}},"63":{"inputs":{"samples":["64",0],"vae":["54",0]},"class_type":"VAEDecode","_meta":{"title":"VAEDecode"}},"64":{"inputs":{"seed":848806973644638,"steps":20,"cfg":1,"sampler_name":"euler","scheduler":"simple","denoise":1,"model":["56",0],"positive":["59",0],"negative":["61",0],"latent_image":["55",0]},"class_type":"KSampler","_meta":{"title":"KSampler"}}}}
+
+### COMFYUI GET
+GET http://127.0.0.1:8188/history/d9779961-b726-49cf-a065-c92f20dc98e7
