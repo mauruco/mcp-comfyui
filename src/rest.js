@@ -24,15 +24,16 @@ const handleRequest = (req, res) => {
     });
 
     req.on('end', async () => {
-        let request = {};
-        let response = {};
-        let messageStr = '';
         try {
-            request = JSON.parse(body);
-            log('log', 'request:', request);
+            log('log', 'request:', body);
             // Handle the request and get the protocol response
-            const { message, comfyParams } = protocol.handleRequest(request);
-            messageStr = JSON.stringify(message);
+            const { message, comfyParams, respond } = protocol.handleRequest(body);
+
+            // Don't respond 
+            if (!respond) {
+                res.writeHead(200);
+                return res.end();
+            }
 
             // Handle ComfyUI calls asynchronously AFTER sending the response
             if (Object.keys(comfyParams).length > 0) {
@@ -43,13 +44,15 @@ const handleRequest = (req, res) => {
                 });
                 child.unref(); // Detached from parent
             }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(message);
+            
         } catch (error) {
             log('error', error);
-            response = { message: protocol.errorMessage(request.id, -32700, 'JSON Parse error') };
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(protocol.errorMessage(null, -32603, 'Internal error', error.message));
         }
-        log('log', 'response:', messageStr);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(messageStr);
     });
 };
 

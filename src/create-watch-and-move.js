@@ -17,7 +17,7 @@ const models = {
 const saveLog = (data) => {
     if (!config.server.debug) return;
     const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
-    fs.appendFile('/tmp/mcp-http-server.log', dataStr + '\n', (err) => {});
+    fs.appendFile(config.server.logFile, dataStr + '\n', (err) => {});
 };
 
 saveLog(`PARAMS: ${JSON.stringify(comfyParams)}`);

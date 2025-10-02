@@ -1,41 +1,59 @@
 import path from 'path';
 
 // PROTOCAL VERSION 2024-11-05
+// ERROR CODES 
+// Pre-defined JSON-RPC 2.0 error codes:
+// -32700: Parse error - Invalid JSON was received
+// -32600: Invalid Request - The JSON sent is not a valid Request object
+// -32601: Method not found - The method does not exist / is not available
+// -32602: Invalid params - Invalid method parameter(s)
+// -32603: Internal error - Internal JSON-RPC error
+// -32000 to -32099: Server error - Reserved for implementation-defined server-errors
+// MCP-specific error codes:
+// -32800: Request cancelled - The request was cancelled
+// -32801: Content too large - The content is too large
 
-const errorMessage = (requestId, code, message) => ({
-    jsonrpc: '2.0',
-    id: requestId,
-    error: {
-        code,
-        message
-    }
-});
-
-const notificationsInitialized = (requestId) => ({
-    jsonrpc: '2.0',
-    id: requestId,
-    method: 'notifications/initialized'
-});
-
-// const notificationsInitialized = () => ({
-//     jsonrpc: "2.0",
-//     result: "ok"
-// });
-
-const initialize = (requestId) => ({
-    jsonrpc: '2.0',
-    id: requestId,
-    result: {
-        protocolVersion: '2024-11-05',
-        capabilities: {
-            tools: {}
-        },
-        serverInfo: {
-            name: 'mcp-comfyui-server',
-            version: '1.0.0'
+const errorMessage = (requestId, code, message, data) => {
+    const response = {
+        jsonrpc: '2.0',
+        id: requestId,
+        error: {
+            code,
+            message
         }
+    };
+    if (data) {
+        response.error.data = data;
     }
-});
+    return response;
+};
+
+const initialize = (requestId, params) => {
+
+    // error if protocol version is not supported
+    if (!['2024-11-05', '2025-03-26', '2025-06-18'].includes(params.protocolVersion)) {
+        return errorMessage(requestId, -32602, 'Unsupported protocol version', {
+            supported: ['2024-11-05', '2025-03-26', '2025-06-18'],
+            requested: params.protocolVersion
+        });
+    }
+
+    // protocol version is supported
+    return {
+        jsonrpc: '2.0',
+        id: requestId,
+        result: {
+            protocolVersion: params.protocolVersion,
+            capabilities: {
+                tools: {}
+            },
+            serverInfo: {
+                name: 'mcp-comfyui-server',
+                version: '1.0.0'
+            }
+        }
+    };
+};
 
 const toolsList = (requestId) => ({
     jsonrpc: "2.0",
@@ -53,8 +71,8 @@ const toolsList = (requestId) => ({
                             description: "Required! The absolute path to the output directory where the generated image will be copied. Do not include a filename in this field."
                         },
                         file_name: {
-                            type: "String",
-                            description: "Required! Filename for the generated image, including the file extension (e.g., for images \".png\", for videos \".mp4\").",
+                            type: "string",
+                            description: "Required! Image file, including the file extension (e.g., for images \".png\", for videos \".mp4\").",
                         },
                         width: {
                             type: "number",
@@ -100,6 +118,19 @@ const toolsList = (requestId) => ({
 const toolsCall = (requestId, args) => {
 
     const params = args.arguments;
+
+    if (!params?.output_path) {
+        return { message: JSON.stringify(errorMessage(requestId, -32602, 'Invalid Request', "output_path")), comfyParams: {}, respond: true };
+    }
+
+    if (!params?.file_name) {
+        return { message: JSON.stringify(errorMessage(requestId, -32602, 'Invalid Request', "file_name")), comfyParams: {}, respond: true };
+    }
+
+    if (params.model && !['flux-krea-t2i'].includes(params.model)) {
+        return { message: JSON.stringify(errorMessage(requestId, -32600, 'Invalid Request')), comfyParams: {}, respond: true };
+    }
+
     const outputPath = path.normalize(params.output_path);
     const fileName = path.basename(params.file_name);
     const model = params.model || 'flux-krea-t2i';
@@ -107,53 +138,90 @@ const toolsCall = (requestId, args) => {
     const width = params.width >= 1024 ? 1024 : params.width || 544;
     const height = params.height >= 1024 ? 1024 : params.height || 544;
     const seed = params.seed || Math.floor(Math.random() * 1000000000);
-    let message = errorMessage(requestId, -32601, `Unknown model: ${model}`);
     const comfyParams = { model, prompt, width, height, seed, outputPath, fileName };
 
-    if (model == 'flux-krea-t2i') {
-        message = {
-            jsonrpc: '2.0',
-            id: requestId,
-            result: {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Image generation started asynchronously using ${model} model with parameters: width=${width}, height=${height}, seed=${seed}, output_path=${outputPath}, filename=${fileName}`
-                    },
-                    {
-                        type: 'text',
-                        text: `Prompt: ${prompt}`
-                    }
-                ]
-            }
-        };
-    }
-
-    return { message, comfyParams };
+    return { message: JSON.stringify({
+        jsonrpc: '2.0',
+        id: requestId,
+        result: {
+            content: [
+                {
+                    type: 'text',
+                    text: `Image generation started asynchronously using ${model} model with parameters: width=${width}, height=${height}, seed=${seed}, output_path=${outputPath}, filename=${fileName}`
+                },
+                {
+                    type: 'text',
+                    text: `Prompt: ${prompt}`
+                }
+            ]
+        }
+    }), comfyParams, respond: true };
 };
 
-const handleRequest = (request) => {
-    if (request.jsonrpc !== '2.0' || !request.method) {
-        return { message: errorMessage(null, -32600, 'Invalid Request'), comfyParams: {} };
-    }
-    
-    const { method, params, id } = request;
-    const requestId = id !== null && id !== undefined ? id : 0;
+const ping = (requestId) => ({
+    jsonrpc: "2.0",
+    id: requestId,
+    result: {}
+});
 
-    switch (method) {
-        case 'initialize':
-            return { message: initialize(requestId), comfyParams: {} };
-        case 'notifications/initialized':
-            return { message: notificationsInitialized(requestId), comfyParams: {} };
-        case 'tools/list':
-            return { message: toolsList(requestId), comfyParams: {} };
-        case 'tools/call':
-            if (!params?.arguments?.output_path || !params?.arguments?.file_name) {
-                return { message: errorMessage(requestId, -32600, 'Invalid Request'), comfyParams: {} };
-            }
-            return toolsCall(requestId, params);
-        default:
-            return { message: errorMessage(requestId, -32601, `Method not found: ${method}`), comfyParams: {} };
+const handleRequest = (line) => {
+    try {
+        const trimmedLine = line.trim();
+        let request;
+
+        // empty line
+        if (trimmedLine === '') {
+            return { message: '', comfyParams: {}, respond: false };
+        }
+
+        // json parse error
+        try {
+            request = JSON.parse(trimmedLine);
+        } catch (error) {
+            return { message: JSON.stringify(errorMessage(null, -32700, 'Parse error')), comfyParams: {}, respond: true };
+        }
+
+
+        // Input is an error
+        if (request.error) {
+            return { message: '', comfyParams: {}, respond: true };
+        }
+
+        if (request.jsonrpc !== '2.0' || !request.method) {
+            return { message: JSON.stringify(errorMessage(null, -32600, 'Invalid Request')), comfyParams: {}, respond: true };
+        }
+
+        const { method, params, id } = request;
+        const requestId = id !== null && id !== undefined ? id : 0;
+
+        switch (method) {
+
+            // do not respond to notifications
+            case 'notifications/initialized':
+                return { message: '', comfyParams: {}, respond: false };
+            case 'notifications/cancelled':
+                return { message: '', comfyParams: {}, respond: false };
+            case 'notifications/progress':
+                return { message: '', comfyParams: {}, respond: false };
+
+            // respond to requests
+            case 'initialize':
+                return { message: JSON.stringify(initialize(requestId, params)), comfyParams: {}, respond: true };
+            case 'tools/list':
+                return { message: JSON.stringify(toolsList(requestId)), comfyParams: {}, respond: true };
+            case 'tools/call':
+                return toolsCall(requestId, params);
+            // TOOLS
+            case 'ping':
+                return { message: JSON.stringify(ping(requestId)), comfyParams: {}, respond: true };
+
+            // DEFAULT
+            default:
+                return { message: JSON.stringify(errorMessage(requestId, -32601, 'Method not found')), comfyParams: {}, respond: true };
+        }
+    } catch (error) {
+        return { message: JSON.stringify(errorMessage(null, -32603, 'Internal error', error.message)), comfyParams: {}, respond: true };
+
     }
 };
 

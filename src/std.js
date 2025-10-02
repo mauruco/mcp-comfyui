@@ -6,15 +6,6 @@ import config from './config.js';
 import protocol from './protocol.js';
 const __dirname = import.meta.dirname;
 
-// import os from 'os';
-// const checkAndExitIfLowPriority = () => {
-//     const currentPriority = os.getPriority();
-//     if (currentPriority <= 0) {
-//         // low priority, exit, probally not needed
-//         process.exit(0);
-//     }
-// };
-
 const saveLog = (data) => {
     if (!config.server.debug) return;
     const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
@@ -29,29 +20,16 @@ const rl = readline.createInterface({
 
 // Use o evento 'line' para processar cada mensagem do cliente
 rl.on('line', async (line) => {
-    let request;
     try {
-        // setInterval(checkAndExitIfLowPriority, 3000);
-
-        const trimmedLine = line.trim();
-        if (trimmedLine === '') {
-            return;
-        }
-
-        request = JSON.parse(trimmedLine);
-        saveLog(`INPUT: ${trimmedLine}`);
+        // log
+        saveLog(`LINE: ${line}`);
         
-        // Input is an error
-        if (request.error) {
-            saveLog('OUTPUT: NOT RESPONDING TO ERRORS');
-            // process.exit(0);
-            return;
-        }
-
         // Handle the request and get the protocol response
-        const { message, comfyParams } = protocol.handleRequest(request);
-        const output = JSON.stringify(message);
+        const { message, comfyParams, respond } = protocol.handleRequest(line);
 
+        // Don't respond 
+        if (!respond) return;
+        
         // Handle ComfyUI calls asynchronously AFTER sending the response
         if (Object.keys(comfyParams).length > 0) {
             const script = path.join(__dirname, 'create-watch-and-move.js');
@@ -61,16 +39,16 @@ rl.on('line', async (line) => {
             });
             child.unref(); // Detached from parent
         }
-
-        saveLog(`OUTPUT: ${output}`);
-        console.log(output);
+        
+        // finally send the response
+        console.log(message);
+        
+        // log
+        saveLog(`OUTPUT: ${message}`);
     } catch (error) {
-        // Agora 'request' pode estar indefinido se o JSON.parse falhar
-        const requestId = request ? request.id : null;
-        const errorMessage = protocol.errorMessage(requestId, -32700, 'Parse error');
-        const output = JSON.stringify(errorMessage);
-        saveLog(`ERROR: ${output}`);
-        console.log(output); // Envia o erro de volta para o cliente
+        saveLog(`INTERNAL ERROR: ${JSON.stringify(error.message)}`);
+        const errorMessage = JSON.stringify(protocol.errorMessage(null, -32603, 'Internal error', error.message));
+        console.log(errorMessage);
     }
 });
 
